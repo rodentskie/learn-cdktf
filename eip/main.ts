@@ -1,8 +1,10 @@
 import { Construct } from "constructs";
-import { App, TerraformStack, S3Backend } from "cdktf";
+import { App, TerraformStack, S3Backend, TerraformOutput } from "cdktf";
 import { AwsProvider, ec2 } from "@cdktf/provider-aws";
 
-class MyStack extends TerraformStack {
+class EipStack extends TerraformStack {
+  public id: string;
+
   constructor(scope: Construct, id: string) {
     super(scope, id);
 
@@ -10,12 +12,19 @@ class MyStack extends TerraformStack {
       region: "ap-southeast-1",
     });
 
-    new ec2.Eip(this, "eip_dev", {
+    const eip = new ec2.Eip(this, "eip_dev", {
       vpc: true,
       tags: {
-        name: "rod-test",
-        environment: "test",
+        Name: "eip_dev",
+        Environment: "dev",
+        Terraform: "true",
       },
+    });
+
+    this.id = eip.id;
+
+    new TerraformOutput(this, "eip_id", {
+      value: eip.id,
     });
 
     new S3Backend(this, {
@@ -24,9 +33,13 @@ class MyStack extends TerraformStack {
       region: "ap-southeast-1",
     });
   }
+
+  public getId() {
+    return this.id;
+  }
 }
 
 const app = new App();
-new MyStack(app, "aws_instance");
+new EipStack(app, "eip");
 
 app.synth();
